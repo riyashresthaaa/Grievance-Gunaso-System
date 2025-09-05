@@ -1,4 +1,3 @@
-// src/components/ClientTheme.tsx
 'use client';
 
 import { Theme } from '@carbon/react';

@@ -1,4 +1,3 @@
-// src/components/ThemeToggle.tsx
 'use client';
 
 import { Toggle } from '@carbon/react';
