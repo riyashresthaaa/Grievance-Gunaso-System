@@ -1,20 +1,14 @@
-// src/app/(shell)/admin/grievances/page.tsx
-type Grievance = {
-  id: string; title: string; ward: string; category: string; status: string; priority: string; createdAt: string;
-};
+import ClientGrievancesList from '@/components/admin/ClientGrievancesList';
+import type { GrievanceRow } from '@/components/shared/AppDataTable';
+import { absoluteUrl } from '@/utils/absoluteUrl';
 
-async function getData(): Promise<Grievance[]> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/grievances`, { cache: 'no-store' });
+async function getData(): Promise<GrievanceRow[]> {
+  const res = await fetch(absoluteUrl('/api/grievances'), { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to load grievances');
   return res.json();
 }
 
 export default async function AdminGrievances() {
   const rows = await getData();
-
-  return (
-    <>
-      <h2>Admin • All Grievances</h2>
-      <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(rows.slice(0, 3), null, 2)}</pre>
-    </>
-  );
+  return <ClientGrievancesList initialRows={rows} />;
 }

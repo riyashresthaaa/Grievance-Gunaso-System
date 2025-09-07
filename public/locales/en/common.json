@@ -1,0 +1,16 @@
+{
+  "empty.title": "No results",
+  "empty.desc": "Try adjusting filters or date range.",
+  "form.title": "Title",
+  "form.description": "Description",
+  "form.category": "Category",
+  "form.ward": "Ward",
+  "form.attachment": "Attachment (optional)",
+  "form.submit": "Submit",
+  "filters.search": "Search tickets",
+  "filters.status": "Status",
+  "filters.priority": "Priority",
+  "filters.ward": "Ward",
+  "filters.apply": "Apply",
+  "filters.clear": "Clear"
+}
