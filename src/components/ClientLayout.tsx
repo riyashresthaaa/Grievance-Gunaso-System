@@ -1,34 +1,36 @@
 // src/components/ClientLayout.tsx
 'use client';
 
-import Link, { LinkProps } from 'next/link';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Header, HeaderName, HeaderGlobalBar, HeaderGlobalAction,
-  HeaderMenuButton, HeaderNavigation, HeaderMenuItem,
-  SideNav, SideNavItems, SideNavLink, SkipToContent, Content
+  Header,
+  HeaderName,
+  HeaderGlobalBar,
+  HeaderGlobalAction,
+  HeaderMenuButton,
+  HeaderNavigation,
+  HeaderMenuItem,
+  SideNav,
+  SideNavItems,
+  SideNavLink,
+  SkipToContent,
+  Content,
+  HeaderPanel,
 } from '@carbon/react';
 import { Grid, Column } from '@carbon/react';
-import { Moon, Sun } from '@carbon/icons-react';
-import { useState, ComponentType, ReactNode, MouseEventHandler } from 'react';
+import { Moon, Sun, Menu } from '@carbon/icons-react';
+import { useState } from 'react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LangToggle } from '@/components/LangToggle';
 import { CalendarToggle } from '@/components/CalendarToggle';
 import { useTheme } from '@/contexts/ThemeContext';
 
-type CarbonLinkProps = {
-  href?: string;
-  className?: string;
-  children?: ReactNode;
-  onClick?: MouseEventHandler<HTMLAnchorElement>;
-};
-const LinkComponent = Link as unknown as ComponentType<CarbonLinkProps>;
-
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [expanded, setExpanded] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();   // 'g10' | 'g90'
-  const isDark = theme === 'g90';
+  const { theme } = useTheme();
 
   const navItems = [
     { href: '/', label: 'Dashboard' },
@@ -45,7 +47,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <SkipToContent />
       <Header aria-label="Gunaso System">
         <HeaderMenuButton
-          aria-label={expanded ? 'Close menu' : 'Open menu'}
+          aria-label="Open menu"
           isActive={expanded}
           onClick={() => setExpanded((v) => !v)}
         />
@@ -66,15 +68,89 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </HeaderNavigation>
 
         <HeaderGlobalBar>
-          {/* Icon reflects current theme and toggles on click */}
+          {/* Theme indicator (toggle itself is in the page controls) */}
+          <HeaderGlobalAction aria-label="Theme">
+            {theme === 'g90' ? <Moon /> : <Sun />}
+          </HeaderGlobalAction>
+
+          {/* Sidebar panel toggle */}
           <HeaderGlobalAction
-            aria-label={isDark ? 'Switch to Light theme' : 'Switch to Dark theme'}
-            title={isDark ? 'Dark (click for Light)' : 'Light (click for Dark)'}
-            onClick={toggleTheme}
+            aria-label="Open sidebar"
+            isActive={panelOpen}
+            onClick={() => setPanelOpen((v) => !v)}
           >
-            {isDark ? <Moon /> : <Sun />}
+            <Menu />
           </HeaderGlobalAction>
         </HeaderGlobalBar>
+
+        {/* Slide-out sidebar content */}
+        <HeaderPanel aria-label="Sidebar" expanded={panelOpen}>
+          <nav
+            aria-label="Sidebar links"
+            style={{ padding: 'var(--cds-spacing-05)' }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setPanelOpen(false);
+            }}
+          >
+            <ul
+              style={{
+                display: 'grid',
+                gap: 'var(--cds-spacing-03)',
+                listStyle: 'none',
+                margin: 0,
+                padding: 0,
+                minWidth: '16rem',
+              }}
+            >
+              <li>
+                <Link
+                  href="/contact"
+                  onClick={() => setPanelOpen(false)}
+                  className="cds--link"
+                >
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/settings"
+                  onClick={() => setPanelOpen(false)}
+                  className="cds--link"
+                >
+                  Settings
+                </Link>
+              </li>
+
+              <li
+                aria-hidden
+                style={{
+                  borderTop: '1px solid var(--cds-border-subtle-01)',
+                  marginTop: 'var(--cds-spacing-03)',
+                  paddingTop: 'var(--cds-spacing-03)',
+                }}
+              />
+
+              <li>
+                <Link
+                  href="/privacy"
+                  onClick={() => setPanelOpen(false)}
+                  className="cds--link"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  onClick={() => setPanelOpen(false)}
+                  className="cds--link"
+                >
+                  Terms &amp; Conditions
+                </Link>
+              </li>
+            </ul>
+          </nav>
+        </HeaderPanel>
       </Header>
 
       <SideNav expanded={expanded} aria-label="Side navigation">
@@ -82,7 +158,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           {navItems.map((item) => (
             <SideNavLink
               key={item.href}
-              element={LinkComponent}
+              element={Link as unknown as React.ElementType}
               href={item.href}
               isActive={pathname === item.href}
             >
@@ -98,7 +174,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div
               aria-live="polite"
               className="shell-controls"
-              style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginBottom: '1rem' }}
+              style={{
+                display: 'flex',
+                gap: '1rem',
+                justifyContent: 'flex-end',
+                marginBottom: '1rem',
+              }}
             >
               <ThemeToggle />
               <LangToggle />

@@ -1,9 +1,15 @@
 'use client';
 
 import {
-  Form, TextInput, TextArea, Dropdown, FileUploader, Button, InlineNotification
+  Form,
+  TextInput,
+  TextArea,
+  Dropdown,
+  FileUploader,
+  Button,
+  InlineNotification,
 } from '@carbon/react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export type GrievanceFormValues = {
   title: string;
@@ -21,12 +27,13 @@ type Props = {
   wards: Option[];
   disabled?: boolean;
   onSubmit: (values: GrievanceFormValues) => Promise<void> | void;
+  /** Optional live-change observer (used by the Review & Consent page handoff) */
+  onChangeValues?: (values: GrievanceFormValues) => void;
 };
 
-function getInputValue(e: any): string {
-  // React 19 + Carbon: prefer target.value; currentTarget may be null
-  return e?.target?.value ?? e?.currentTarget?.value ?? '';
-}
+const getInputValue = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+): string => e.currentTarget?.value ?? e.target?.value ?? '';
 
 export default function FormFieldGroup({
   initial,
@@ -34,6 +41,7 @@ export default function FormFieldGroup({
   wards,
   disabled,
   onSubmit,
+  onChangeValues,
 }: Props) {
   const [values, setValues] = useState<GrievanceFormValues>({
     title: initial?.title ?? '',
@@ -42,27 +50,60 @@ export default function FormFieldGroup({
     ward: initial?.ward,
     attachment: null,
   });
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isDisabled = !!disabled || submitting;
+
+  // Helper: update local state and notify parent (if provided)
+  const setAndNotify = useCallback(
+    (updater: (v: GrievanceFormValues) => GrievanceFormValues) => {
+      setValues(prev => {
+        const next = updater(prev);
+        onChangeValues?.(next);
+        return next;
+      });
+    },
+    [onChangeValues]
+  );
+
   const handleSubmit = async () => {
-    setSubmitting(true);
     setError(null);
+
+    // minimal required field validation
+    if (!values.title.trim() || !values.category || !values.ward) {
+      setError('Please fill Title, Category, and Ward.');
+      return;
+    }
+
     try {
+      setSubmitting(true);
       await onSubmit(values);
     } catch (e) {
-      setError((e as Error).message || 'Submit failed');
+      const msg = e instanceof Error ? e.message : 'Submit failed';
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isDisabled = disabled || submitting;
-
   return (
-    <Form aria-label="Grievance form" style={{ display: 'grid', gap: 'var(--cds-spacing-05)' }}>
+    <Form
+      aria-label="Grievance form"
+      style={{ display: 'grid', gap: 'var(--cds-spacing-05)' }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit();
+      }}
+    >
       {error && (
-        <InlineNotification kind="error" title="Failed" subtitle={error} role="alert" />
+        <InlineNotification
+          kind="error"
+          role="alert"
+          title="Failed"
+          subtitle={error}
+        />
       )}
 
       <TextInput
@@ -72,9 +113,7 @@ export default function FormFieldGroup({
         value={values.title}
         disabled={isDisabled}
         required
-        onChange={(e) =>
-          setValues((v) => ({ ...v, title: getInputValue(e) }))
-        }
+        onChange={(e) => setAndNotify((v) => ({ ...v, title: getInputValue(e) }))}
       />
 
       <TextArea
@@ -85,7 +124,7 @@ export default function FormFieldGroup({
         disabled={isDisabled}
         required
         onChange={(e) =>
-          setValues((v) => ({ ...v, description: getInputValue(e) }))
+          setAndNotify((v) => ({ ...v, description: getInputValue(e) }))
         }
       />
 
@@ -95,10 +134,15 @@ export default function FormFieldGroup({
         label="Select category"
         disabled={isDisabled}
         items={categories}
-        selectedItem={categories.find((o) => o.id === values.category) ?? null}
+        selectedItem={
+          categories.find((o) => o.id === values.category) ?? null
+        }
         itemToString={(o) => (o ? o.label : '')}
-        onChange={(e) =>
-          setValues((v) => ({ ...v, category: e.selectedItem?.id ?? undefined }))
+        onChange={(e: { selectedItem?: Option | null }) =>
+          setAndNotify((v) => ({
+            ...v,
+            category: e.selectedItem?.id ?? undefined,
+          }))
         }
       />
 
@@ -110,8 +154,11 @@ export default function FormFieldGroup({
         items={wards}
         selectedItem={wards.find((o) => o.id === values.ward) ?? null}
         itemToString={(o) => (o ? o.label : '')}
-        onChange={(e) =>
-          setValues((v) => ({ ...v, ward: e.selectedItem?.id ?? undefined }))
+        onChange={(e: { selectedItem?: Option | null }) =>
+          setAndNotify((v) => ({
+            ...v,
+            ward: e.selectedItem?.id ?? undefined,
+          }))
         }
       />
 
@@ -121,18 +168,19 @@ export default function FormFieldGroup({
         buttonLabel="Add file"
         accept={['image/*', 'application/pdf']}
         disabled={isDisabled}
+        /** stop perpetual spinner; allow editing/removal UI */
         filenameStatus="edit"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>) => {
-          const file = evt?.target?.files?.[0] ?? null;
-          setValues((v) => ({ ...v, attachment: file }));
+          const file = evt.target?.files?.[0] ?? null;
+          setAndNotify((v) => ({ ...v, attachment: file }));
         }}
       />
 
-
-
-      <Button kind="primary" onClick={handleSubmit} disabled={isDisabled}>
-        {submitting ? 'Submitting…' : 'Submit'}
-      </Button>
+      <div style={{ display: 'flex', gap: 'var(--cds-spacing-03)' }}>
+        <Button kind="primary" type="submit" disabled={isDisabled}>
+          {submitting ? 'Submitting…' : 'Submit'}
+        </Button>
+      </div>
     </Form>
   );
 }

@@ -1,0 +1,5 @@
+grievance_id,ts,label_en,label_np,done
+G-2025-0001,2025-08-20T07:20:00Z,Submitted,दर्ता भयो,true
+G-2025-0001,2025-08-21T10:00:00Z,Assigned to staff,कर्मचारीलाई जिम्मा,true
+G-2025-0002,2025-08-22T10:10:00Z,Submitted,दर्ता भयो,true
+G-2025-0002,2025-08-23T08:00:00Z,In progress,काम भइरहेको,false

@@ -2,10 +2,11 @@
 
 import { Tag } from '@carbon/react';
 
-type Status = 'New' | 'In Progress' | 'Resolved' | 'Rejected' | 'Unknown';
+type Status = 'New' | 'Open' | 'In Progress' | 'Resolved' | 'Rejected' | 'Unknown';
 
 const map: Record<Status, { kind: React.ComponentProps<typeof Tag>['type']; label: string }> = {
   New: { kind: 'blue', label: 'New' },
+  Open: { kind: 'blue', label: 'Open' },
   'In Progress': { kind: 'magenta', label: 'In Progress' },
   Resolved: { kind: 'green', label: 'Resolved' },
   Rejected: { kind: 'red', label: 'Rejected' },
