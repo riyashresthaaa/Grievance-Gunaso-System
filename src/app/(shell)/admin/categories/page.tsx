@@ -3,66 +3,82 @@
 import { useEffect, useState } from 'react';
 import {
   DataTable, Table, TableHead, TableRow, TableHeader, TableBody, TableCell,
-  Button, Modal, TextInput, InlineNotification,
+  Button, Modal, TextInput, Dropdown, InlineNotification,
 } from '@carbon/react';
 
-type Ward = { id: string; name?: string };
+type Category = {
+  id: string;
+  name_en: string;
+  name_np?: string;
+  priority: 'Low' | 'Medium' | 'High' | string;
+};
 
-export default function AdminWardsPage() {
-  const [rows, setRows] = useState<Ward[]>([]);
+const PRIORITY = ['Low', 'Medium', 'High'] as const;
+
+export default function AdminCategoriesPage() {
+  const [rows, setRows] = useState<Category[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
-  const [id, setId] = useState('');
-  const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
+  const [nameNp, setNameNp] = useState('');
+  const [priority, setPriority] = useState<Category['priority']>('Medium');
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setErr(null);
-    const res = await fetch('/api/wards', { cache: 'no-store' });
-    if (!res.ok) { setErr('Failed to load wards'); return; }
+    const res = await fetch('/api/categories', { cache: 'no-store' });
+    if (!res.ok) { setErr('Failed to load categories'); return; }
     setRows(await res.json());
   };
 
   useEffect(() => { load(); }, []);
 
   const add = async () => {
-    if (!id.trim()) return;
+    if (!nameEn.trim()) return;
     setSaving(true);
-    const res = await fetch('/api/wards', {
+    const res = await fetch('/api/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id.trim(), name: name.trim() || undefined }),
+      body: JSON.stringify({ name_en: nameEn.trim(), name_np: nameNp.trim(), priority }),
     });
     setSaving(false);
     if (res.ok) {
       setOpen(false);
-      setId(''); setName('');
+      setNameEn(''); setNameNp(''); setPriority('Medium');
       load();
     } else {
-      setErr('Failed to add ward');
+      setErr('Failed to add category');
     }
   };
 
-  const remove = async (wid: string) => {
-    const res = await fetch(`/api/wards/${wid}`, { method: 'DELETE' });
+  const remove = async (id: string) => {
+    const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
     if (res.ok) load();
-    else setErr('Failed to delete ward');
+    else setErr('Failed to delete category');
   };
 
   const headers = [
     { key: 'id', header: 'ID' },
-    { key: 'name', header: 'Name' },
+    { key: 'name_en', header: 'Name (EN)' },
+    { key: 'name_np', header: 'Name (NP)' },
+    { key: 'priority', header: 'Priority' },
     { key: 'actions', header: 'Actions' },
   ];
 
-  const tableRows = rows.map((r) => ({ id: r.id, name: r.name ?? `Ward ${r.id}`, actions: '' }));
+  const tableRows = rows.map((r) => ({
+    id: r.id,
+    name_en: r.name_en,
+    name_np: r.name_np ?? '',
+    priority: r.priority,
+    actions: '',
+  }));
 
   return (
     <div style={{ display: 'grid', gap: 'var(--cds-spacing-05)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <h2 className="cds--type-productive-heading-03" style={{ margin: 0 }}>Wards</h2>
-        <Button onClick={() => setOpen(true)}>Add Ward</Button>
+        <h2 className="cds--type-productive-heading-03" style={{ margin: 0 }}>Categories</h2>
+        <Button onClick={() => setOpen(true)}>Add Category</Button>
       </div>
 
       {err && <InlineNotification kind="error" title="Error" subtitle={err} role="alert" />}
@@ -92,7 +108,9 @@ export default function AdminWardsPage() {
                 return (
                   <TableRow key={rowKey} {...rowRest}>
                     <TableCell>{item.id}</TableCell>
-                    <TableCell>{item.name}</TableCell>
+                    <TableCell>{item.name_en}</TableCell>
+                    <TableCell>{item.name_np}</TableCell>
+                    <TableCell>{item.priority}</TableCell>
                     <TableCell>
                       <Button kind="danger--tertiary" size="sm" onClick={() => remove(item.id)}>
                         Delete
@@ -109,16 +127,26 @@ export default function AdminWardsPage() {
 
       <Modal
         open={open}
-        modalHeading="Add Ward"
+        modalHeading="Add Category"
         primaryButtonText={saving ? 'Saving…' : 'Add'}
         secondaryButtonText="Cancel"
         onRequestClose={() => setOpen(false)}
         onRequestSubmit={add}
-        primaryButtonDisabled={saving || !id.trim()}
+        primaryButtonDisabled={saving || !nameEn.trim()}
       >
         <div style={{ display: 'grid', gap: '1rem', paddingTop: '0.5rem' }}>
-          <TextInput id="ward-id" labelText="Ward ID" value={id} onChange={(e) => setId(e.currentTarget.value)} />
-          <TextInput id="ward-name" labelText="Name (optional)" value={name} onChange={(e) => setName(e.currentTarget.value)} />
+          <TextInput id="cat-en" labelText="Name (EN)" value={nameEn} onChange={(e) => setNameEn(e.currentTarget.value)} />
+          <TextInput id="cat-np" labelText="Name (NP)" value={nameNp} onChange={(e) => setNameNp(e.currentTarget.value)} />
+          <Dropdown
+            id="cat-pr"
+            titleText="Priority"
+            label="Select priority"
+            size="sm"
+            items={[...PRIORITY]}
+            selectedItem={priority}
+            itemToString={(s) => s}
+            onChange={(e: any) => setPriority(e.selectedItem)}
+          />
         </div>
       </Modal>
     </div>
